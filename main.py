@@ -396,7 +396,7 @@ def main():
                 )
 
                 st.session_state['authentication2'] = authentication
-                
+
                 # print("SESSION DATA ------------------------------------------------------")
                 # print("app_type", st.session_state['app_type'])
                 # print("sensitive_data", st.session_state['sensitive_data'])
@@ -404,7 +404,14 @@ def main():
                 # print("authentication", st.session_state['authentication'])
 
 
-            threat_model_submit_button = st.button(label="Generate Threat Model")
+            # Create three columns: one for the first button, one empty column, and one for the right-aligned button
+            col1, col2, col3 = st.columns([0.6, 0.2, 0.2])
+
+            with col1:
+                threat_model_submit_button = st.button(label="Generate Threat Model")
+
+            with col3:
+                save_report = st.button(label="Save Report")
 
             if threat_model_submit_button and st.session_state.get('image_analysis_content'):
                 image_analysis_content = st.session_state['image_analysis_content']

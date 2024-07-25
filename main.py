@@ -26,7 +26,46 @@ from mitigations import create_mitigations_prompt, get_mitigations, get_mitigati
 from dread import get_dread_assessment, get_dread_assessment_azure, get_dread_assessment_google, dread_json_to_markdown
 from test_cases import create_test_cases_prompt, get_test_cases, get_test_cases_azure, get_test_cases_google
 
+import streamlit as st
+import uuid
 
+def update_st_session_data():
+    # Define the default structure of the session state data
+    default_data = {
+        "UUID": str(uuid.uuid4()),
+        "uploaded_file": None,
+        "threat_model": "",
+        "name": "",
+        "app_type": "Web application",  # Set default value
+        "app_type2": "",  # Set default value
+        "sensitive_data": "Top Secret",  # Set default value
+        "sensitive_data2": "",  # Set default value
+        "internet_facing": "Yes",  # Set default value
+        "internet_facing2": "",  # Set default value
+        "authentication": "SSO",  # Set default value
+        "authentication2": "",  # Set default value
+        "image_analysis_content": "",
+        "attack_tree": "",
+        "mitigations": "",
+        "dread_assessment": "",
+        "test_cases": ""
+    }
+
+    # Initialize the session state if it doesn't exist
+    if 'session_data' not in st.session_state:
+        st.session_state.session_data = default_data
+    else:
+        # Ensure that all keys are present in case of any missing keys
+        for key in default_data:
+            if key not in st.session_state.session_data:
+                st.session_state.session_data[key] = default_data[key]
+
+    # Ensure that keys are present in the main session state
+    for key in default_data:
+        if key not in st.session_state:
+            st.session_state[key] = default_data[key]
+
+    return st.session_state.session_data
 
 # UI operations class
 class UIOps:
@@ -36,10 +75,34 @@ class UIOps:
     def handle_text_submission(self, text, chat_history):
         user_input = text
         chat_history += f"User: {user_input}\n"
-        print("chat_history: ", chat_history)
-        print("END OF CHAT HISTORY ------------------------------------------------------")
-        
-        result = query_rag(user_input, chat_history, fetch_context=True, chroma_db=self.chroma_db, route=None)
+        # print("chat_history: ", chat_history)
+        # print("END OF CHAT HISTORY ------------------------------------------------------")
+        session_data = {
+            "image_analysis_content": st.session_state['image_analysis_content'],
+            "attack_tree": st.session_state['attack_tree'],
+            "app_type": st.session_state['app_type2'],
+            "sensitive_data": st.session_state['sensitive_data2'],
+            "internet_facing": st.session_state['internet_facing2'],
+            "authentication": st.session_state['authentication2'],
+            "threat_model": st.session_state['threat_model'],
+            "mitigations": st.session_state['mitigations'],
+            "dread_assessment": st.session_state['dread_assessment'],
+            "test_cases": st.session_state['test_cases']
+        }
+
+        print("FIRST SESSION DATA ------------------------------------------------------")
+        print("image_analysis_content", st.session_state['image_analysis_content'])
+        print("app_type", st.session_state['app_type2'])
+        print("sensitive_data", st.session_state['sensitive_data2'])
+        print("internet_facing", st.session_state['internet_facing2'])
+        print("authentication", st.session_state['authentication2'])
+        print("threat_model", st.session_state['threat_model'])
+        print("mitigations", st.session_state['mitigations'])
+        print("dread_assessment", st.session_state['dread_assessment'])
+        print("test_cases", st.session_state['test_cases'])
+        print("END OF FIRST SESSION DATA ------------------------------------------------------")
+
+        result = query_rag(user_input, chat_history, session_data, fetch_context=False, chroma_db=self.chroma_db, route=None)
         result = result.content
         chat_history += f"Bot: {result}\n"
         
@@ -109,11 +172,18 @@ def get_input():
         key="app_desc",
         help="Please provide a detailed description of the application, including the purpose of the application, the technologies used, and any other relevant information.",
     )
-    st.session_state['app_input'] = input_text
+    st.session_state['image_analysis_content'] = input_text
     return input_text
 
 # Main function
 def main():
+
+    # Update session state data
+    update_st_session_data()
+
+    # # Display the session data
+    # print(session_data)
+    
     selected = create_sidebar()
 
     if selected == "RFPs":
@@ -229,8 +299,8 @@ def main():
 
             col1, col2 = st.columns([1, 1])
 
-            if 'app_input' not in st.session_state:
-                st.session_state['app_input'] = ''
+            if 'image_analysis_content' not in st.session_state:
+                st.session_state['image_analysis_content'] = ''
 
             with col1:
                 if model_provider == "OpenAI API" and selected_model in ["gpt-4-turbo", "gpt-4o"]:
@@ -254,8 +324,7 @@ def main():
                                         image_analysis_output = get_image_analysis(openai_api_key, selected_model, image_analysis_prompt, base64_image)
                                         if image_analysis_output and 'choices' in image_analysis_output and image_analysis_output['choices'][0]['message']['content']:
                                             image_analysis_content = image_analysis_output['choices'][0]['message']['content']
-                                            st.session_state.image_analysis_content = image_analysis_content
-                                            st.session_state['app_input'] = image_analysis_content
+                                            st.session_state['image_analysis_content'] = image_analysis_content
                                         else:
                                             st.error("Failed to analyze the image. Please check the API key and try again.")
                                     except KeyError as e:
@@ -265,22 +334,23 @@ def main():
                                         st.error("An unexpected error occurred while analyzing the image.")
                                         print(f"Error: {e}")
 
-                    app_input = st.text_area(
+                    image_analysis_content = st.text_area(
                         label="Describe the application to be modelled",
-                        value=st.session_state['app_input'],
-                        key="app_input_widget",
+                        value=st.session_state['image_analysis_content'],
+                        key="image_analysis_content_widget",
                         help="Please provide a detailed description of the application, including the purpose of the application, the technologies used, and any other relevant information.",
                     )
-                    if app_input != st.session_state['app_input']:
-                        st.session_state['app_input'] = app_input
+                    if image_analysis_content != st.session_state['image_analysis_content']:
+                        st.session_state['image_analysis_content'] = image_analysis_content
 
                 else:
-                    app_input = get_input()
-                    st.session_state['app_input'] = app_input
+                    image_analysis_content = get_input()
+                    st.session_state['image_analysis_content'] = image_analysis_content
 
-            app_input = st.session_state['app_input']
+            image_analysis_content = st.session_state['image_analysis_content']
 
             with col2:
+
                 app_type = st.selectbox(
                     label="Select the application type",
                     options=[
@@ -294,6 +364,8 @@ def main():
                     key="app_type",
                 )
 
+                st.session_state['app_type2'] = app_type
+                
                 sensitive_data = st.selectbox(
                     label="What is the highest sensitivity level of the data processed by the application?",
                     options=[
@@ -307,30 +379,43 @@ def main():
                     key="sensitive_data",
                 )
 
+                st.session_state['sensitive_data2'] = sensitive_data
+
                 internet_facing = st.selectbox(
                     label="Is the application internet-facing?",
                     options=["Yes", "No"],
                     key="internet_facing",
                 )
 
-                authentication = st.multiselect(
+                st.session_state['internet_facing2'] = internet_facing
+
+                authentication = st.selectbox(
                     "What authentication methods are supported by the application?",
-                    ["SSO", "MFA", "OAUTH2", "Basic", "None"],
+                    options=["SSO", "MFA", "OAUTH2", "Basic", "None"],
                     key="authentication",
                 )
 
+                st.session_state['authentication2'] = authentication
+                
+                # print("SESSION DATA ------------------------------------------------------")
+                # print("app_type", st.session_state['app_type'])
+                # print("sensitive_data", st.session_state['sensitive_data'])
+                # print("internet_facing", st.session_state['internet_facing'])
+                # print("authentication", st.session_state['authentication'])
+
+
             threat_model_submit_button = st.button(label="Generate Threat Model")
 
-            if threat_model_submit_button and st.session_state.get('app_input'):
-                app_input = st.session_state['app_input']
+            if threat_model_submit_button and st.session_state.get('image_analysis_content'):
+                image_analysis_content = st.session_state['image_analysis_content']
                 if threat_model == "STRIDE":
-                    threat_model_prompt = create_stride_threat_model_prompt(app_type, authentication, internet_facing, sensitive_data, app_input)
+                    threat_model_prompt = create_stride_threat_model_prompt(app_type, authentication, internet_facing, sensitive_data, image_analysis_content)
                 elif threat_model == "DREAD":
-                    threat_model_prompt = create_dread_assessment_prompt(app_type, authentication, internet_facing, sensitive_data, app_input)
+                    threat_model_prompt = create_dread_assessment_prompt(app_type, authentication, internet_facing, sensitive_data, image_analysis_content)
                 elif threat_model == "PASTA":
-                    threat_model_prompt = create_pasta_prompt(app_type, authentication, internet_facing, sensitive_data, app_input)
+                    threat_model_prompt = create_pasta_prompt(app_type, authentication, internet_facing, sensitive_data, image_analysis_content)
                 elif threat_model == "OWASP":
-                    threat_model_prompt = create_owasp_prompt(app_type, authentication, internet_facing, sensitive_data, app_input)
+                    threat_model_prompt = create_owasp_prompt(app_type, authentication, internet_facing, sensitive_data, image_analysis_content)
 
                 with st.spinner("Analysing potential threats..."):
                     max_retries = 3
@@ -368,7 +453,7 @@ def main():
                     mime="text/markdown",
                 )
 
-            if threat_model_submit_button and not st.session_state.get('app_input'):
+            if threat_model_submit_button and not st.session_state.get('image_analysis_content'):
                 st.error("Please enter your application details before submitting.")
 
         with tab2:
@@ -383,9 +468,9 @@ def main():
             else:
                 attack_tree_submit_button = st.button(label="Generate Attack Tree")
                 
-                if attack_tree_submit_button and st.session_state.get('app_input'):
-                    app_input = st.session_state.get('app_input')
-                    attack_tree_prompt = create_attack_tree_prompt(app_type, authentication, internet_facing, sensitive_data, app_input)
+                if attack_tree_submit_button and st.session_state.get('image_analysis_content'):
+                    image_analysis_content = st.session_state.get('image_analysis_content')
+                    attack_tree_prompt = create_attack_tree_prompt(app_type, authentication, internet_facing, sensitive_data, image_analysis_content)
 
                     with st.spinner("Generating attack tree..."):
                         try:
@@ -395,6 +480,8 @@ def main():
                                 mermaid_code = get_attack_tree(openai_api_key, selected_model, attack_tree_prompt)
 
                             st.write("Attack Tree Code:")
+                            st.session_state['attack_tree'] = mermaid_code
+                            
                             st.code(mermaid_code)
 
                             st.write("Attack Tree Diagram Preview:")
@@ -471,6 +558,7 @@ def main():
                         file_name="mitigations.md",
                         mime="text/markdown",
                     )
+                    st.session_state['mitigations'] = mitigations_markdown
                 else:
                     st.error("Please generate a threat model first before suggesting mitigations.")
 
@@ -498,8 +586,6 @@ def main():
                                     dread_assessment = get_dread_assessment(openai_api_key, selected_model, dread_assessment_prompt)
                                 elif model_provider == "Google AI API":
                                     dread_assessment = get_dread_assessment_google(google_api_key, google_model, dread_assessment_prompt)
-
-                                st.session_state['dread_assessment'] = dread_assessment
                                 break
                             except Exception as e:
                                 retry_count += 1
@@ -516,6 +602,7 @@ def main():
                         file_name="dread_assessment.md",
                         mime="text/markdown",
                     )
+                    st.session_state['dread_assessment'] = dread_assessment
                 else:
                     st.error("Please generate a threat model first before requesting a DREAD risk assessment.")
 
@@ -565,6 +652,22 @@ def main():
                         file_name="test_cases.md",
                         mime="text/markdown",
                     )
+
+                    st.session_state['test_cases'] = test_cases_markdown
+                    # print("FINAL SESSION DATA ------------------------------------------------------")
+                    # print(session_data)
+                    # print("image_analysis_content", st.session_state['image_analysis_content'])
+                    # print("app_type", st.session_state['app_type'])
+                    # print("sensitive_data", st.session_state['sensitive_data'])
+                    # print("internet_facing", st.session_state['internet_facing'])
+                    # print("authentication", st.session_state['authentication'])
+                    # print("threat_model", st.session_state['threat_model'])
+                    # print("mitigations", st.session_state['mitigations'])
+                    # print("dread_assessment", st.session_state['dread_assessment'])
+                    # print("test_cases", st.session_state['test_cases'])
+
+
+
                 else:
                     st.error("Please generate a threat model first before requesting test cases.")
 
@@ -691,6 +794,29 @@ def main():
         send_button = st.button("Send", key="send_button")
 
         if send_button and chat_input:
+
+                     # Ensure all session data keys exist and are not None
+            # session_data_defaults = {
+            #     "app_type": "",
+            #     "sensitive_data": "",
+            #     "internet_facing": "",
+            #     "authentication": "",
+            #     "image_analysis_content": "",
+            #     "threat_model": "",
+            #     "mitigations": "",
+            #     "dread_assessment": "",
+            #     "test_cases": ""
+            # }
+            
+            # # Use defaults if any session data variable is missing
+            # for key in session_data_defaults:
+            #     print(f"Checking key: {key}")
+            #     print(f"Session data: {session_data[key]}")
+            #     if key not in session_data or session_data[key] is None:
+            #         print(f"Missing session data key: {key}")
+            #         session_data[key] = session_data_defaults[key]    
+
+
             history_text = "\n".join([f"{speaker}: {message}" for speaker, message in st.session_state.history])
             result, updated_history = ui_ops.handle_text_submission(chat_input, history_text)
             

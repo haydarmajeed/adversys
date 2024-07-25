@@ -24,11 +24,32 @@ Overall, Bolt is a powerful tool that can help with a wide range of tasks and pr
 Previous conversation history:
 {chat_history}
 
-the user will typically ask Bolt a specific question.
+The user will typically ask Bolt a specific question about their application and its infrastructure and cybersecurity mechanisms.
 
-Answer the question based only on the following context if appropriate:
+The following is the information about the application:
 
-{context}
+Application Details:
+- Application Type: {app_type}
+- Security Level: {sensitive_data}
+- Internet Facing: {internet_facing}
+- Authentication Methods: {authentication}
+- Application Description: {image_analysis_content}
+
+Attack Tree:
+{attack_tree}
+
+Threat Model:
+{threat_model}
+
+Mitigations:
+{mitigations}
+
+DREAD Assessment:
+{dread_assessment}
+
+Test Cases:
+{test_cases}
+
 
 ---
 
@@ -41,10 +62,10 @@ def setup_chroma_db():
     chroma_db = Chroma(persist_directory="chroma", embedding_function=embedding_function)
     return chroma_db
 
-def query_rag(query_text: str, chat_history: str, fetch_context: bool, chroma_db, route: str):
+def query_rag(query_text: str, chat_history: str, session_data: str, fetch_context: bool, chroma_db, route: str):
     try:
         model = ChatOpenAI(model="gpt-4o-mini")
-
+        # print("session_data: ", session_data)
         if fetch_context:
             chroma_db = setup_chroma_db()
             # If context is required, proceed with fetching context from the DB
@@ -55,11 +76,41 @@ def query_rag(query_text: str, chat_history: str, fetch_context: bool, chroma_db
             print("Context being added to the prompt:")
             print(context_text)
         else:
-            # No context needed
+            # No context neededn  
             context_text = ""
 
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-        prompt = prompt_template.format(context=context_text, question=query_text, chat_history=chat_history)
+
+
+        # print("app_type", session_data["app_type"])
+        # print("sensitive_data", session_data["sensitive_data"])
+        # print("internet_facing", session_data["internet_facing"])
+        # print("authentication", session_data["authentication"])
+        # # print("image_analysis_content", session_data["image_analysis_content"])
+        # print("attack_tree", session_data["attack_tree"])
+        # # print("threat_model", session_data["threat_model"])
+        # print("mitigations", session_data["mitigations"])
+        # print("dread_assessment", session_data["dread_assessment"])
+        # print("test_cases", session_data["test_cases"])
+        
+
+
+
+        prompt = prompt_template.format(
+            app_type=session_data["app_type"],
+            sensitive_data=session_data["sensitive_data"],
+            internet_facing=session_data["internet_facing"],
+            authentication=session_data["authentication"],
+            image_analysis_content=session_data["image_analysis_content"],
+            attack_tree=session_data["attack_tree"],
+            threat_model=session_data["threat_model"],
+            mitigations=session_data["mitigations"],
+            dread_assessment=session_data["dread_assessment"],
+            test_cases=session_data["test_cases"],
+            # context=context_text,
+            question=query_text,
+            chat_history=chat_history
+        )
 
         response_text = model.invoke(prompt)
 

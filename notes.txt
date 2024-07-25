@@ -5,6 +5,10 @@ mistralai package requires pydantic version >=2.5.2
 
 TODO:
 
+Bot for testing systematically
+
+organize workflow
+
 connect a database that will compile all of the text output by the threat model and store it by date
 
 have a way to select from each of these dates on the copilot page 

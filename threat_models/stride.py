@@ -1,4 +1,4 @@
-def create_threat_model_prompt(app_type, authentication, internet_facing, sensitive_data, app_input):
+def create_stride_threat_model_prompt(app_type, authentication, internet_facing, sensitive_data, app_input):
     prompt = f"""
     Act as a cyber security expert with more than 20 years experience of using the STRIDE threat modelling methodology to produce comprehensive threat models for a wide range of applications. Your task is to use the application description and additional provided to you to produce a list of specific threats for the application.
 

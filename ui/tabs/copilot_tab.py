@@ -1,6 +1,7 @@
 import streamlit as st
-from ui_ops import UIOps
-from db_ops import add_data
+from src.ui_ops import UIOps
+from src.db_ops import add_data
+
 
 def copilot_tab():
     st.title("Copilot Page")
@@ -25,13 +26,17 @@ def copilot_tab():
     # Chat input and send button
     chat_input = st.text_input("Send a message...", key="chat_input")
     send_button = st.button("Send", key="send_button")
-    
+
     ui_ops = UIOps()
-    
+
     if send_button and chat_input:
-        history_text = "\n".join([f"{speaker}: {message}" for speaker, message in st.session_state.history])
-        result, updated_history = ui_ops.handle_text_submission(chat_input, history_text)
-        
+        history_text = "\n".join(
+            [f"{speaker}: {message}" for speaker, message in st.session_state.history]
+        )
+        result, updated_history = ui_ops.handle_text_submission(
+            chat_input, history_text
+        )
+
         st.session_state.history.append(("User", chat_input))
         st.session_state.history.append(("Bot", result))
 

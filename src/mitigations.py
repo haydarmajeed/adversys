@@ -2,6 +2,7 @@ import google.generativeai as genai
 from openai import OpenAI
 from openai import AzureOpenAI
 
+
 # Function to create a prompt to generate mitigating controls
 def create_mitigations_prompt(threats):
     prompt = f"""
@@ -25,11 +26,14 @@ def get_mitigations(api_key, model_name, prompt):
     client = OpenAI(api_key=api_key)
 
     response = client.chat.completions.create(
-        model = model_name,
+        model=model_name,
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that provides threat mitigation strategies in Markdown format."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that provides threat mitigation strategies in Markdown format.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
 
     # Access the content directly as the response will be in text format
@@ -39,25 +43,31 @@ def get_mitigations(api_key, model_name, prompt):
 
 
 # Function to get mitigations from the Azure OpenAI response.
-def get_mitigations_azure(azure_api_endpoint, azure_api_key, azure_api_version, azure_deployment_name, prompt):
+def get_mitigations_azure(
+    azure_api_endpoint, azure_api_key, azure_api_version, azure_deployment_name, prompt
+):
     client = AzureOpenAI(
-        azure_endpoint = azure_api_endpoint,
-        api_key = azure_api_key,
-        api_version = azure_api_version,
+        azure_endpoint=azure_api_endpoint,
+        api_key=azure_api_key,
+        api_version=azure_api_version,
     )
 
     response = client.chat.completions.create(
-        model = azure_deployment_name,
+        model=azure_deployment_name,
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that provides threat mitigation strategies in Markdown format."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that provides threat mitigation strategies in Markdown format.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
 
     # Access the content directly as the response will be in text format
     mitigations = response.choices[0].message.content
 
     return mitigations
+
 
 # Function to get mitigations from the Google model's response.
 def get_mitigations_google(google_api_key, google_model, prompt):
@@ -71,7 +81,7 @@ def get_mitigations_google(google_api_key, google_model, prompt):
         # Extract the text content from the 'candidates' attribute
         mitigations = response.candidates[0].content.parts[0].text
         # Replace '\n' with actual newline characters
-        mitigations = mitigations.replace('\\n', '\n')
+        mitigations = mitigations.replace("\\n", "\n")
     except (IndexError, AttributeError) as e:
         print(f"Error accessing response content: {str(e)}")
         print("Raw response:")

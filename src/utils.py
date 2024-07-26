@@ -1,12 +1,13 @@
 # utils.py
 import json
-import streamlit as st
 import uuid
-import streamlit.components.v1 as components
 import requests
+import streamlit as st
+import streamlit.components.v1 as components
 import google.generativeai as genai
 from openai import OpenAI
 from openai import AzureOpenAI
+
 
 def parse_response(response):
     try:
@@ -15,38 +16,45 @@ def parse_response(response):
         print(f"JSON decoding error: {e}")
         return None
 
+
 def get_threat_model(api_key, model_name, prompt):
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
         model=model_name,
         messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant designed to output JSON.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
     return parse_response(response)
 
 
-# Function to convert JSON to Markdown for display.    
+# Function to convert JSON to Markdown for display.
 def json_to_markdown(threat_model, improvement_suggestions):
     markdown_output = "## Threat Model\n\n"
-    
+
     # Start the markdown table with headers
     markdown_output += "| Threat Type | Scenario | Potential Impact |\n"
     markdown_output += "|-------------|----------|------------------|\n"
-    
+
     # Fill the table rows with the threat model data
     for threat in threat_model:
         markdown_output += f"| {threat['Threat Type']} | {threat['Scenario']} | {threat['Potential Impact']} |\n"
-    
+
     markdown_output += "\n\n## Improvement Suggestions\n\n"
     for suggestion in improvement_suggestions:
         markdown_output += f"- {suggestion}\n"
-    
+
     return markdown_output
 
+
 # Function to create a prompt for generating a threat model
-def create_threat_model_prompt(app_type, authentication, internet_facing, sensitive_data, app_input):
+def create_threat_model_prompt(
+    app_type, authentication, internet_facing, sensitive_data, app_input
+):
     prompt = f"""
 Act as a cyber security expert with more than 20 years experience of using the STRIDE threat modelling methodology to produce comprehensive threat models for a wide range of applications. Your task is to use the application description and additional provided to you to produce a list of specific threats for the application.
 
@@ -87,6 +95,7 @@ Example of expected JSON response format:
 """
     return prompt
 
+
 def create_image_analysis_prompt():
     prompt = """
     You are a Senior Solution Architect tasked with explaining the following architecture diagram to 
@@ -110,36 +119,29 @@ def create_image_analysis_prompt():
     """
     return prompt
 
+
 # Function to get analyse uploaded architecture diagrams.
 def get_image_analysis(api_key, model_name, prompt, base64_image):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     messages = [
         {
             "role": "user",
             "content": [
-                {
-                    "type": "text",
-                    "text": prompt
-                },
+                {"type": "text", "text": prompt},
                 {
                     "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
-                }
-            ]
+                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                },
+            ],
         }
     ]
 
-    payload = {
-        "model": model_name,
-        "messages": messages,
-        "max_tokens": 4000
-    }
+    payload = {"model": model_name, "messages": messages, "max_tokens": 4000}
 
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    response = requests.post(
+        "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+    )
 
     # Log the response for debugging
     try:
@@ -151,7 +153,9 @@ def get_image_analysis(api_key, model_name, prompt, base64_image):
     except Exception as err:
         print(f"Other error occurred: {err}")  # Other errors
 
-    print(f"Response content: {response.content}")  # Log the response content for further inspection
+    print(
+        f"Response content: {response.content}"
+    )  # Log the response content for further inspection
     return None
 
 
@@ -163,8 +167,11 @@ def get_threat_model(api_key, model_name, prompt):
         model=model_name,
         response_format={"type": "json_object"},
         messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": "You are a helpful assistant designed to output JSON.",
+            },
+            {"role": "user", "content": prompt},
         ],
         max_tokens=4000,
     )
@@ -176,20 +183,25 @@ def get_threat_model(api_key, model_name, prompt):
 
 
 # Function to get threat model from the Azure OpenAI response.
-def get_threat_model_azure(azure_api_endpoint, azure_api_key, azure_api_version, azure_deployment_name, prompt):
+def get_threat_model_azure(
+    azure_api_endpoint, azure_api_key, azure_api_version, azure_deployment_name, prompt
+):
     client = AzureOpenAI(
-        azure_endpoint = azure_api_endpoint,
-        api_key = azure_api_key,
-        api_version = azure_api_version,
+        azure_endpoint=azure_api_endpoint,
+        api_key=azure_api_key,
+        api_version=azure_api_version,
     )
 
     response = client.chat.completions.create(
-        model = azure_deployment_name,
+        model=azure_deployment_name,
         response_format={"type": "json_object"},
         messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant designed to output JSON.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
 
     # Convert the JSON string in the 'content' field to a Python dictionary
@@ -202,8 +214,8 @@ def get_threat_model_azure(azure_api_endpoint, azure_api_key, azure_api_version,
 def get_threat_model_google(google_api_key, google_model, prompt):
     genai.configure(api_key=google_api_key)
     model = genai.GenerativeModel(
-        google_model,
-        generation_config={"response_mime_type": "application/json"})
+        google_model, generation_config={"response_mime_type": "application/json"}
+    )
     response = model.generate_content(prompt)
     try:
         # Access the JSON content from the 'parts' attribute of the 'content' object
@@ -236,11 +248,11 @@ def update_st_session_data():
         "attack_tree": "",
         "mitigations": "",
         "dread_assessment": "",
-        "test_cases": ""
+        "test_cases": "",
     }
 
     # Initialize the session state if it doesn't exist
-    if 'session_data' not in st.session_state:
+    if "session_data" not in st.session_state:
         st.session_state.session_data = default_data
     else:
         # Ensure that all keys are present in case of any missing keys
@@ -254,6 +266,7 @@ def update_st_session_data():
             st.session_state[key] = default_data[key]
 
     return st.session_state.session_data
+
 
 def mermaid(code: str, height: int = 500) -> None:
     components.html(

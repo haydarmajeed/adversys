@@ -5,6 +5,7 @@ from openai import AzureOpenAI
 
 import streamlit as st
 
+
 def dread_json_to_markdown(dread_assessment):
     markdown_output = "| Threat Type | Scenario | Damage Potential | Reproducibility | Exploitability | Affected Users | Discoverability | Risk Score |\n"
     markdown_output += "|-------------|----------|------------------|-----------------|----------------|----------------|-----------------|-------------|\n"
@@ -12,14 +13,20 @@ def dread_json_to_markdown(dread_assessment):
         threats = dread_assessment.get("Risk Assessment", [])
         for threat in threats:
             if isinstance(threat, dict):
-                damage_potential = threat.get('Damage Potential', 0)
-                reproducibility = threat.get('Reproducibility', 0)
-                exploitability = threat.get('Exploitability', 0)
-                affected_users = threat.get('Affected Users', 0)
-                discoverability = threat.get('Discoverability', 0)
-                
-                risk_score = (damage_potential + reproducibility + exploitability + affected_users + discoverability) / 5
-                
+                damage_potential = threat.get("Damage Potential", 0)
+                reproducibility = threat.get("Reproducibility", 0)
+                exploitability = threat.get("Exploitability", 0)
+                affected_users = threat.get("Affected Users", 0)
+                discoverability = threat.get("Discoverability", 0)
+
+                risk_score = (
+                    damage_potential
+                    + reproducibility
+                    + exploitability
+                    + affected_users
+                    + discoverability
+                ) / 5
+
                 markdown_output += f"| {threat.get('Threat Type', 'N/A')} | {threat.get('Scenario', 'N/A')} | {damage_potential} | {reproducibility} | {exploitability} | {affected_users} | {discoverability} | {risk_score:.2f} |\n"
             else:
                 raise TypeError(f"Expected a dictionary, got {type(threat)}: {threat}")
@@ -27,6 +34,7 @@ def dread_json_to_markdown(dread_assessment):
         st.write(f"Error: {e}")
         raise
     return markdown_output
+
 
 def create_dread_assessment_prompt(threats):
     prompt = f"""
@@ -72,39 +80,49 @@ Ensure the JSON response is correctly formatted and does not contain any additio
 """
     return prompt
 
+
 def get_dread_assessment(api_key, model_name, prompt):
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
         model=model_name,
         response_format={"type": "json_object"},
         messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant designed to output JSON.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
-    
+
     try:
         dread_assessment = json.loads(response.choices[0].message.content)
     except json.JSONDecodeError as e:
         st.write(f"JSON decoding error: {e}")
         dread_assessment = {}
-    
+
     return dread_assessment
 
-def get_dread_assessment_azure(azure_api_endpoint, azure_api_key, azure_api_version, azure_deployment_name, prompt):
+
+def get_dread_assessment_azure(
+    azure_api_endpoint, azure_api_key, azure_api_version, azure_deployment_name, prompt
+):
     client = AzureOpenAI(
-        azure_endpoint = azure_api_endpoint,
-        api_key = azure_api_key,
-        api_version = azure_api_version,
+        azure_endpoint=azure_api_endpoint,
+        api_key=azure_api_key,
+        api_version=azure_api_version,
     )
 
     response = client.chat.completions.create(
-        model = azure_deployment_name,
+        model=azure_deployment_name,
         response_format={"type": "json_object"},
         messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "system",
+                "content": "You are a helpful assistant designed to output JSON.",
+            },
+            {"role": "user", "content": prompt},
+        ],
     )
 
     try:
@@ -112,14 +130,15 @@ def get_dread_assessment_azure(azure_api_endpoint, azure_api_key, azure_api_vers
     except json.JSONDecodeError as e:
         st.write(f"JSON decoding error: {e}")
         dread_assessment = {}
-    
+
     return dread_assessment
+
 
 def get_dread_assessment_google(google_api_key, google_model, prompt):
     genai.configure(api_key=google_api_key)
     model = genai.GenerativeModel(
-        google_model,
-        generation_config={"response_mime_type": "application/json"})
+        google_model, generation_config={"response_mime_type": "application/json"}
+    )
     response = model.generate_content(prompt)
     try:
         response_content = json.loads(response.candidates[0].content.parts[0].text)

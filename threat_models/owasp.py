@@ -1,4 +1,6 @@
-def create_owasp_prompt(app_type, authentication, internet_facing, sensitive_data, app_input):
+def create_owasp_prompt(
+    app_type, authentication, internet_facing, sensitive_data, app_input
+):
     prompt = f"""
     Act as a cyber security expert with more than 20 years of experience in threat modeling using the OWASP (Open Web Application Security Project) methodology.
     Your task is to produce a threat model for the application described below.

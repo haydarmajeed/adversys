@@ -8,10 +8,11 @@ from ui.tabs.test_cases_tab import test_cases_tab
 from ui.tabs.copilot_tab import copilot_tab
 from ui.tabs.about_tab import about_tab
 from ui.tabs.rfps_tab import rfps_tab
+# from ui.tabs.library_tab import library_tab
 
 from ui.sidebar import create_sidebar
+from src.utils import update_st_session_data
 
-from utils import update_st_session_data
 
 # Function to get user input for the application description and key details
 def get_input():
@@ -55,6 +56,9 @@ def main():
         with tab5:
             test_cases_tab()
 
+    # elif selected == "Library":
+    #     library_tab()
+
     elif selected == "About":
         about_tab()
     elif selected == "Copilot":
@@ -63,6 +67,7 @@ def main():
     else:
         st.title(f"{selected} Page")
         st.write("This page is under construction.")
+
 
 if __name__ == "__main__":
     main()

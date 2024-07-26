@@ -1,15 +1,17 @@
-import argparse
-from langchain.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-from dotenv import load_dotenv
-from db_ops import reload_chroma_db
-from get_embedding_function import get_embedding_function
-from langchain_community.vectorstores import Chroma
-import time
 import os
+import argparse
+from dotenv import load_dotenv
+from langchain.prompts import ChatPromptTemplate
+from langchain_community.vectorstores import Chroma
+from langchain_openai import ChatOpenAI
+
+from src.db_ops import reload_chroma_db
+from src.get_embedding_function import get_embedding_function
+
+
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 PROMPT_TEMPLATE = """
@@ -50,19 +52,30 @@ DREAD Assessment:
 Test Cases:
 {test_cases}
 
-
 ---
 
 Answer the question based on the above context: {question}
 
 If you do not have any context or context relevant to the question they are asking you inform the user that you do not have adequate context to answer this question
 """
+
+
 def setup_chroma_db():
     embedding_function = get_embedding_function()
-    chroma_db = Chroma(persist_directory="chroma", embedding_function=embedding_function)
+    chroma_db = Chroma(
+        persist_directory="chroma", embedding_function=embedding_function
+    )
     return chroma_db
 
-def query_rag(query_text: str, chat_history: str, session_data: str, fetch_context: bool, chroma_db, route: str):
+
+def query_rag(
+    query_text: str,
+    chat_history: str,
+    session_data: str,
+    fetch_context: bool,
+    chroma_db,
+    route: str,
+):
     try:
         model = ChatOpenAI(model="gpt-4o-mini")
         # print("session_data: ", session_data)
@@ -70,17 +83,18 @@ def query_rag(query_text: str, chat_history: str, session_data: str, fetch_conte
             chroma_db = setup_chroma_db()
             # If context is required, proceed with fetching context from the DB
             results = chroma_db.similarity_search_with_score(query_text, k=5)
-            context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-            
+            context_text = "\n\n---\n\n".join(
+                [doc.page_content for doc, _score in results]
+            )
+
             # Print the context for debugging
             print("Context being added to the prompt:")
             print(context_text)
         else:
-            # No context neededn  
+            # No context neededn
             context_text = ""
 
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-
 
         # print("app_type", session_data["app_type"])
         # print("sensitive_data", session_data["sensitive_data"])
@@ -92,9 +106,6 @@ def query_rag(query_text: str, chat_history: str, session_data: str, fetch_conte
         # print("mitigations", session_data["mitigations"])
         # print("dread_assessment", session_data["dread_assessment"])
         # print("test_cases", session_data["test_cases"])
-        
-
-
 
         prompt = prompt_template.format(
             app_type=session_data["app_type"],
@@ -109,7 +120,7 @@ def query_rag(query_text: str, chat_history: str, session_data: str, fetch_conte
             test_cases=session_data["test_cases"],
             # context=context_text,
             question=query_text,
-            chat_history=chat_history
+            chat_history=chat_history,
         )
 
         response_text = model.invoke(prompt)
@@ -122,16 +133,17 @@ def query_rag(query_text: str, chat_history: str, session_data: str, fetch_conte
 
         print(formatted_response)
         return response_text
-    
+
     except ValueError as e:
         print(f"An error occurred: {e}")
-        if 'AccessDeniedException' in str(e):
+        if "AccessDeniedException" in str(e):
             print("Access denied. Please check your credentials and model permissions.")
         else:
             print("An unexpected error occurred.")
-    
+
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

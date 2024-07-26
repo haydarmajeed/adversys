@@ -1,6 +1,7 @@
 import streamlit as st
-from ui_ops import UIOps
-from db_ops import add_data
+from src.ui_ops import UIOps
+from src.db_ops import add_data
+
 
 def rfps_tab():
     st.title("RFPs Page")
@@ -25,12 +26,14 @@ def rfps_tab():
 
     with col2:
         st.subheader("Chatbox")
-        
+
         # Display current chat history
         chat_history_container = st.container()
         with chat_history_container:
             if "current_chat_index" in st.session_state:
-                current_chat = st.session_state.rfp_history[st.session_state.current_chat_index]
+                current_chat = st.session_state.rfp_history[
+                    st.session_state.current_chat_index
+                ]
                 for speaker, message in current_chat:
                     st.markdown(f"**{speaker}**: {message}")
 
@@ -43,11 +46,17 @@ def rfps_tab():
                 st.session_state.current_chat_index = 0
                 st.session_state.rfp_history.append([])
 
-            current_chat = st.session_state.rfp_history[st.session_state.current_chat_index]
-            history_text = "\n".join([f"{speaker}: {message}" for speaker, message in current_chat])
+            current_chat = st.session_state.rfp_history[
+                st.session_state.current_chat_index
+            ]
+            history_text = "\n".join(
+                [f"{speaker}: {message}" for speaker, message in current_chat]
+            )
             ui_ops = UIOps()
-            result, updated_history = ui_ops.handle_text_submission(chat_input, history_text)
-            
+            result, updated_history = ui_ops.handle_text_submission(
+                chat_input, history_text
+            )
+
             current_chat.append(("User", chat_input))
             current_chat.append(("Bot", result))
 
